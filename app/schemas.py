@@ -7,16 +7,25 @@ class ownerCreate(BaseModel):
     phone_number: Optional[int] = None
     email: EmailStr
 
+class ownerResponse(ownerCreate):
+    pass
+
 class details_schema(BaseModel):
     quantity: int
-    created_at: datetime
+
+class details_schema_response(BaseModel):
+    quantity: int
+    last_updated: datetime
 
 class itemCreate(BaseModel):
     name: str
-    code: str
-    owner: str
+    code: Optional[str] = None
+    owner: ownerCreate
     details: details_schema
 
-class itemResponse(itemCreate):
-    pass
+class itemResponse(BaseModel):
+    name: str
+    code: str
+    owner: ownerResponse
+    details: details_schema_response
 
