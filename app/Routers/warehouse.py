@@ -1,7 +1,6 @@
 from fastapi import APIRouter, status, HTTPException
 from .. import schemas, models, helper_methods
-import hashlib
-import pytz
+
 from datetime import datetime
 from typing import List
 
@@ -10,28 +9,20 @@ router = APIRouter(
     tags=["items"]
 )
 
-def item_code(item: schemas.itemCreate):
-    composite_key = f"{item.owner}-{item.name}".encode("utf-8")
-    return hashlib.sha256(composite_key).hexdigest()
-
-def time():
-    now_utc = datetime.now(pytz.utc)
-    return now_utc
-
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.itemResponse)
 def create_item(item: schemas.itemCreate):
     items = list(models.items.query(item.name))
     if items:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, 
                             detail="item already exists")
-    item.code = item_code(item)
+    item.code = helper_methods.item_code(item)
     new_item = models.items(**item.dict())
-    new_item.details.last_updated=time()
+    new_item.details.last_updated=helper_methods.time()
     
     new_item.save()
     return new_item
 
-@router.get("/{product_name}", response_model=List[schemas.itemResponse])
+@router.get("/{product_name}", response_model=List[schemas.itemResponse]) # returns all items with the product name
 def get_item(product_name: str):
     query = models.items.query(product_name)
     if not query:
@@ -40,16 +31,23 @@ def get_item(product_name: str):
     
     return helper_methods.response_to_dict(query)
 
-@router.put("/{product_name}", status_code=status.HTTP_202_ACCEPTED)
-def update_item(product_name : str, updates: schemas.itemCreate):
-    item = models.items.get(product_name)
+@router.put("/{primary_key}/{range_key}", status_code=status.HTTP_202_ACCEPTED) # updates quantity, cannot update primary keys like Global Secondary Keys, Partition Keys or Sort Keys
+def update_item(primary_key : str, range_key : str, updates: schemas.itemUpdate):
+    item = models.items.get(primary_key, range_key)
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                            detail=f"No item exists with name:{product_name}")
-    
-    updated_item = item.update(actions=[models.items.name.set(updates.name),
-                         models.items.code.set(updates.code),
-                         models.items.owner.set(updates.owner),
-                         models.items.details.last_updated.set(datetime.now())])
-    updated_item.save()
-    return{"status" : "updated!"}
+                            detail=f"No item exists with name:{primary_key}")
+    print(item)
+    item.update(actions=[
+                    models.items.details.last_updated.set(datetime.now()),
+                    models.items.details.quantity.set(updates.quantity)])
+    item.save()
+    return item.to_simple_dict()
+
+@router.delete("/{primary_key}/{range_key}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_item(primary_key: str, range_key: str):
+    item = models.items.get(primary_key, range_key)
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail=f"item with name:{primary_key} and code:{range_key} does not exist!")
+    item.delete()

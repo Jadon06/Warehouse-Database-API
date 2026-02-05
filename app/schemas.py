@@ -29,3 +29,5 @@ class itemResponse(BaseModel):
     owner: ownerResponse
     details: details_schema_response
 
+class itemUpdate(BaseModel):
+    quantity : Optional[int] = 0

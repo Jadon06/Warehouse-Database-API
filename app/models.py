@@ -54,5 +54,6 @@ class owners(Model):
     name = UnicodeAttribute(hash_key=True)
     phone_number = NumberAttribute(null=True)
     email = UnicodeAttribute(null=False)
+    # password = UnicodeAttribute(null=False)
 
     
