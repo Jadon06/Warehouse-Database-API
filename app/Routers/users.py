@@ -16,6 +16,4 @@ def create_user(user: schemas.ownerCreate):
     except DoesNotExist:
         new_user = models.owners(**user.dict())
         new_user.save()
-        return new_user.to_simple_dict()
-    
-    
+        return new_user.to_simple_dict()    

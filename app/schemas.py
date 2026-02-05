@@ -31,3 +31,11 @@ class itemResponse(BaseModel):
 
 class itemUpdate(BaseModel):
     quantity : Optional[int] = 0
+
+class TokenData(BaseModel):
+    id: Optional[str] = None
+    email: Optional[EmailStr] = None
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
