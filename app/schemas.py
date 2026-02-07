@@ -1,14 +1,20 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, SecretStr
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal
 
 class ownerCreate(BaseModel):
     name: str
     phone_number: Optional[int] = None
     email: EmailStr
+    password: str
+    clearance_level: Literal["GUEST", "ADMIN", "EMPLOYEE"]
 
 class ownerResponse(ownerCreate):
-    pass
+    name: str
+    phone_number: Optional[int] = None
+    email: EmailStr
+    password: SecretStr
+    clearance_level: Literal["GUEST", "ADMIN", "EMPLOYEE"]
 
 class details_schema(BaseModel):
     quantity: int
@@ -33,7 +39,6 @@ class itemUpdate(BaseModel):
     quantity : Optional[int] = 0
 
 class TokenData(BaseModel):
-    id: Optional[str] = None
     email: Optional[EmailStr] = None
 
 class Token(BaseModel):

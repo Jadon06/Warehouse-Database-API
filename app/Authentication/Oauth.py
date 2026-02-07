@@ -4,7 +4,10 @@ from fastapi import Depends, status, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta
 import os
-from .. import schemas
+from dotenv import load_dotenv
+from .. import schemas, models
+from pynamodb.exceptions import DoesNotExist
+
 # from sqlalchemy.orm import Session
 # from . import schemas, database, models
 # from .config import settings
@@ -14,10 +17,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
 # Secret Key
 # Algorithm for encrypting token
 # expiration time
+load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
 def create_acess_token(data: dict):
     payload = data.copy()
@@ -36,3 +40,14 @@ def verify_access_token(token: str, credentials_exception):
         raise credentials_exception
     token_data = schemas.TokenData(id=token_id, email=token_email)
     return token_data
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials",
+                                          headers={"WWW-Authenticate" : "Bearer"})
+    token_info = verify_access_token(token, credentials_exception)
+    try:
+        user = models.owners.get(token_info.name, range_key=None)
+        return user
+    except DoesNotExist:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Email does not exist")
+    

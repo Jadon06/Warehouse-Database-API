@@ -8,12 +8,12 @@ class details_attr(MapAttribute):
     quantity = NumberAttribute(default=0)
     last_updated = UTCDateTimeAttribute()
 
-class owner_attr(MapAttribute):
+class user_attr(MapAttribute):
     name = UnicodeAttribute(hash_key=True)
     phone_number = NumberAttribute(null=True)
     email = UnicodeAttribute(null=False)
 
-class Owner(GlobalSecondaryIndex):
+class User(GlobalSecondaryIndex):
     class Meta:
         index_name='owner'
         projection=AllProjection()
@@ -25,6 +25,7 @@ class Owner(GlobalSecondaryIndex):
     name = UnicodeAttribute(hash_key=True)
     phone_number = NumberAttribute(null=True)
     email = UnicodeAttribute(null=False)
+    clearance_level = UnicodeAttribute(default='GUEST')
 
 class items(Model):
     class Meta:
@@ -38,11 +39,11 @@ class items(Model):
     
     name = UnicodeAttribute(hash_key=True)  # 'hash_key=True' makes this the partition key
     code = UnicodeAttribute(range_key=True) # 'range_key=True' makes this the sort key
-    owner = owner_attr()
-    owner_index = Owner() # stores a set of strings which must be all unique
+    user = user_attr()
+    user_index = User() # stores a set of strings which must be all unique
     details = details_attr()
 
-class owners(Model):
+class Users(Model):
     class Meta:
         table_name = "owners_table"
         region = "us-east-1"
@@ -51,9 +52,10 @@ class owners(Model):
         write_capacity_units = 5
         read_capacity_units = 5
 
-    name = UnicodeAttribute(hash_key=True)
+    email = UnicodeAttribute(hash_key=True)
     phone_number = NumberAttribute(null=True)
-    email = UnicodeAttribute(null=False)
-    # password = UnicodeAttribute(null=False)
+    name = UnicodeAttribute(null=False)
+    password = UnicodeAttribute(null=False)
+    clearance_level = UnicodeAttribute(default="GUEST")
 
     

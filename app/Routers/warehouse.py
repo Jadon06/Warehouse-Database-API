@@ -1,5 +1,6 @@
-from fastapi import APIRouter, status, HTTPException
-from .. import schemas, models, helper_methods
+from fastapi import APIRouter, status, HTTPException, Depends
+from .. import schemas, models
+from ..Authentication import Oauth, utils
 
 from datetime import datetime
 from typing import List
@@ -10,14 +11,17 @@ router = APIRouter(
 )
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.itemResponse)
-def create_item(item: schemas.itemCreate):
+def create_item(item: schemas.itemCreate, current_user = Depends(Oauth.get_current_user)):
+    if current_user.clearance_level != "ADMIN":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
+                            detail="Clearance level ADMIN required!")
     items = list(models.items.query(item.name))
     if items:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, 
                             detail="item already exists")
-    item.code = helper_methods.item_code(item)
+    item.code = utils.item_code(item)
     new_item = models.items(**item.dict())
-    new_item.details.last_updated=helper_methods.time()
+    new_item.details.last_updated=utils.time()
     
     new_item.save()
     return new_item
@@ -29,7 +33,7 @@ def get_item(product_name: str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail=f"No item exists with name:{product_name}")
     
-    return helper_methods.response_to_dict(query)
+    return utils.response_to_dict(query)
 
 @router.put("/{primary_key}/{range_key}", status_code=status.HTTP_202_ACCEPTED) # updates quantity, cannot update primary keys like Global Secondary Keys, Partition Keys or Sort Keys
 def update_item(primary_key : str, range_key : str, updates: schemas.itemUpdate):

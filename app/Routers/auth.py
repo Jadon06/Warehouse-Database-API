@@ -10,14 +10,12 @@ router = APIRouter(tags=["Authentication"])
 
 @router.post("/login", response_model=schemas.Token)
 def login(user_credentials: OAuth2PasswordRequestForm = Depends()):
+    print(user_credentials.username)
     try:
-        user = models.owners.get(user_credentials.name, range_key=None)
+        user = models.Users.get(user_credentials.username, range_key=None)
         if not utils.verify(user_credentials.password, user.password):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid email or password!")
+        access_token = Oauth.create_acess_token(data={"email" : user.email, "clearance_level" : user.clearance_level})
+        return {"access_token" : access_token, "token_type" : user.clearance_level}
     except DoesNotExist:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid email or password!")
-    
-    # create a token
-    # return the token for login
-    access_token = Oauth.create_acess_token(data={"User_id" : user.id, "email" : user.email})
-    return {"access_token" : access_token, "token_type" : "Bearer"}

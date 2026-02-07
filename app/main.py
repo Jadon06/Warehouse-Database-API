@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from .Routers import warehouse, users
-from .models import items, owners
+from .Routers import warehouse, users, auth
+from .models import items, Users
 from datetime import datetime
 
 app = FastAPI()
@@ -12,7 +12,7 @@ def init_dynamodb():
     items(
         name="InitItem",
         code="000",
-        owner={
+        user={
             "name": "system",
             "email": "system@example.com"
         },
@@ -20,16 +20,19 @@ def init_dynamodb():
                  "last_updated": datetime.now()}
     ).save()
 
-    if not owners.exists():
-        owners.create_table(wait=True)
+    if not Users.exists():
+        Users.create_table(wait=True)
 
-    owners(
+    Users(
         name="InitName",
         phone_number=000000000,
-        email="initemail@gmail.com"
+        email="initemail@gmail.com",
+        password="password",
+        clearance_level="GUEST"
     ).save()
 
 init_dynamodb()
 
 app.include_router(warehouse.router)
 app.include_router(users.router)
+app.include_router(auth.router)
