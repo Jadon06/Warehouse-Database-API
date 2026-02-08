@@ -42,11 +42,12 @@ def verify_access_token(token: str, credentials_exception):
     return token_data
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials",
+    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
+                                          detail="Could not validate credentials",
                                           headers={"WWW-Authenticate" : "Bearer"})
     token_info = verify_access_token(token, credentials_exception)
     try:
-        user = models.owners.get(token_info.name, range_key=None)
+        user = models.Users.get(token_info.email, range_key=None)
         return user
     except DoesNotExist:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Email does not exist")

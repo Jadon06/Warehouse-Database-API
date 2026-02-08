@@ -11,7 +11,7 @@ router = APIRouter(
 )
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.itemResponse)
-def create_item(item: schemas.itemCreate, current_user = Depends(Oauth.get_current_user)):
+def create_item(item: schemas.itemCreate, current_user: int = Depends(Oauth.get_current_user)):
     if current_user.clearance_level != "ADMIN":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
                             detail="Clearance level ADMIN required!")
@@ -36,7 +36,11 @@ def get_item(product_name: str):
     return utils.response_to_dict(query)
 
 @router.put("/{primary_key}/{range_key}", status_code=status.HTTP_202_ACCEPTED) # updates quantity, cannot update primary keys like Global Secondary Keys, Partition Keys or Sort Keys
-def update_item(primary_key : str, range_key : str, updates: schemas.itemUpdate):
+def update_item(primary_key : str, range_key : str, updates: schemas.itemUpdate, current_user: int = Depends(Oauth.get_current_user)):
+    if current_user.clearance_level != "ADMIN":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
+                            detail="Clearance level ADMIN required!")
+    
     item = models.items.get(primary_key, range_key)
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
@@ -49,7 +53,11 @@ def update_item(primary_key : str, range_key : str, updates: schemas.itemUpdate)
     return item.to_simple_dict()
 
 @router.delete("/{primary_key}/{range_key}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_item(primary_key: str, range_key: str):
+def delete_item(primary_key: str, range_key: str, current_user: int = Depends(Oauth.get_current_user)):
+    if current_user.clearance_level != "ADMIN":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
+                            detail="Clearance level ADMIN required!")
+    
     item = models.items.get(primary_key, range_key)
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
